@@ -5,6 +5,28 @@
   <title>example</title>
 </head>
 <body>
+  <script src="https://www.gstatic.com/firebasejs/7.5.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.5.0/firebase-storage.js"></script>
+
+  <script>
+      //   name: 'test',
+  //   options: FirebaseOptions(
+  //     googleAppID: Platform.isIOS
+  //         ? '1:159623150305:ios:4a213ef3dbd8997b'
+  //         : '1:159623150305:android:ef48439a0cc0263d',
+  //     gcmSenderID: '159623150305',
+  //     apiKey: 'AIzaSyChk3KEG7QYrs4kQPLP1tjJNxBTbfCAdgg',
+  //     projectID: 'flutter-firebase-plugins',
+  //   ),
+  // );
+  firebase.initializeApp({
+    apiKey: "AIzaSyChk3KEG7QYrs4kQPLP1tjJNxBTbfCAdgg",
+    projectId: "flutter-firebase-plugins",
+    storageBucket: "flutter-firebase-plugins.appspot.com"
+    });
+  </script>
+
   <script src="main.dart.js" type="application/javascript"></script>
+
 </body>
 </html>

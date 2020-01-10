@@ -58,27 +58,24 @@ class _MyHomePageState extends State<MyHomePage> {
   List<StorageUploadTask> _tasks = <StorageUploadTask>[];
 
   Future<void> _uploadFile() async {
-    print('supposed to upload file, calling ref instead');
-    var response = widget.storage.ref();
-    print('ref returned :$response');
-    // final String uuid = Uuid().v1();
-    // final Directory systemTempDir = Directory.systemTemp;
-    // final File file = await File('${systemTempDir.path}/foo$uuid.txt').create();
-    // await file.writeAsString(kTestString);
-    // assert(await file.readAsString() == kTestString);
-    // final StorageReference ref =
-    //     widget.storage.ref().child('text').child('foo$uuid.txt');
-    // final StorageUploadTask uploadTask = ref.putFile(
-    //   file,
-    //   StorageMetadata(
-    //     contentLanguage: 'en',
-    //     customMetadata: <String, String>{'activity': 'test'},
-    //   ),
-    // );
+    final String uuid = Uuid().v1();
+    final Directory systemTempDir = Directory.systemTemp;
+    final File file = await File('${systemTempDir.path}/foo$uuid.txt').create();
+    await file.writeAsString(kTestString);
+    assert(await file.readAsString() == kTestString);
+    final StorageReference ref =
+        widget.storage.ref().child('text').child('foo$uuid.txt');
+    final StorageUploadTask uploadTask = ref.putFile(
+      file,
+      StorageMetadata(
+        contentLanguage: 'en',
+        customMetadata: <String, String>{'activity': 'test'},
+      ),
+    );
 
-    // setState(() {
-    //   _tasks.add(uploadTask);
-    // });
+    setState(() {
+      _tasks.add(uploadTask);
+    });
   }
 
   Future<void> _downloadFile(StorageReference ref) async {
