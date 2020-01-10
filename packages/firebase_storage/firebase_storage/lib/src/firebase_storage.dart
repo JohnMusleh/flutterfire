@@ -5,7 +5,7 @@
 part of firebase_storage;
 
 /// The entry point of the Firebase Storage SDK.
-class FirebaseStorage {
+class FirebaseStorage extends FirebaseStoragePlatform {
   /// Returns the [FirebaseStorage] instance, initialized with a custom
   /// [FirebaseApp] if [app] is specified and a custom Google Cloud Storage
   /// bucket if [storageBucket] is specified. Otherwise the instance will be
@@ -18,7 +18,17 @@ class FirebaseStorage {
   /// Storage Bucket.
   ///
   /// The [app] argument is the custom [FirebaseApp].
-  FirebaseStorage({this.app, this.storageBucket});
+  FirebaseStorage({this.app, this.storageBucket}) : super(app, storageBucket);
+
+  factory FirebaseStorage._fromPlatform(
+      FirebaseStoragePlatform firebaseStoragePlatform) {
+    return firebaseStoragePlatform == null
+        ? null
+        : FirebaseStorage(
+            app: firebaseStoragePlatform.app,
+            storageBucket: firebaseStoragePlatform.storageBucket,
+          );
+  }
 
   static FirebaseStorage _instance = FirebaseStorage();
 
@@ -42,9 +52,6 @@ class FirebaseStorage {
     return StorageReference._fromPlatform(
         FirebaseStoragePlatform.instance?.ref());
   }
-
-  // @visibleForTesting
-  // static get channel => MethodChannelFirebaseStorage.channel;
 
   Future<int> getMaxDownloadRetryTimeMillis() async {
     return await FirebaseStoragePlatform.instance

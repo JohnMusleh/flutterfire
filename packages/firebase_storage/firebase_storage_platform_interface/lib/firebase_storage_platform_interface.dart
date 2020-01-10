@@ -14,7 +14,7 @@ import 'dart:io';
 import 'package:meta/meta.dart' show visibleForTesting;
 
 part 'src/method_channel_firebase_storage.dart';
-// part 'src/types/platform_download_task.dart';
+part 'src/types/platform_download_task.dart';
 part 'src/types/platform_storage_ref.dart';
 part 'src/types/storage_metadata.dart';
 part 'src/types/platform_upload_task.dart';
@@ -78,6 +78,8 @@ abstract class FirebaseStoragePlatform {
     _instance = instance;
   }
 
+  PlatformStorageRef ref();
+
   /// This method ensures that [FirebaseStoragePlatform] isn't implemented with `implements`.
   ///
   /// See class docs for more details on why using `implements` to implement
@@ -91,10 +93,6 @@ abstract class FirebaseStoragePlatform {
   static final StreamController<MethodCall> _methodStreamController =
       StreamController<MethodCall>.broadcast(); // ignore: close_sinks
   Stream<MethodCall> get methodStream => _methodStreamController.stream;
-
-  PlatformStorageRef ref() {
-    throw UnimplementedError('ref() is not implemented');
-  }
 
   Future<int> getMaxDownloadRetryTimeMillis() async {
     throw UnimplementedError(

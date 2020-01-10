@@ -6,73 +6,32 @@ part of firebase_storage;
 
 class StorageUploadTask extends PlatformUploadTask {
   StorageUploadTask._(
-    this._data,
-    MethodChannelFirebaseStorage firebaseStorage,
+    _data,
+    FirebaseStorage firebaseStorage,
     PlatformStorageRef ref,
     StorageMetadata metadata,
     UploadDataType dataType,
   ) : super(_data, firebaseStorage, ref, metadata, dataType);
 
-  final dynamic _data;
+  factory StorageUploadTask._fromPlatform(
+      PlatformUploadTask platformUploadTask) {
+    return platformUploadTask == null
+        ? null
+        : StorageUploadTask._(
+            platformUploadTask.data,
+            platformUploadTask.firebaseStorage,
+            platformUploadTask.ref,
+            platformUploadTask.metadata,
+            platformUploadTask.dataType,
+          );
+  }
 
   /// Pause the upload
-  void pause() => _channel.invokeMethod<void>(
-        'UploadTask#pause',
-        <String, dynamic>{
-          'app': firebaseStorage.app?.name,
-          'bucket': firebaseStorage.storageBucket,
-          'handle': handle,
-        },
-      );
+  void pause() => super.pause();
 
   /// Resume the upload
-  void resume() => _channel.invokeMethod<void>(
-        'UploadTask#resume',
-        <String, dynamic>{
-          'app': firebaseStorage.app?.name,
-          'bucket': firebaseStorage.storageBucket,
-          'handle': handle,
-        },
-      );
+  void resume() => super.resume();
 
   /// Cancel the upload
-  void cancel() => _channel.invokeMethod<void>(
-        'UploadTask#cancel',
-        <String, dynamic>{
-          'app': firebaseStorage.app?.name,
-          'bucket': firebaseStorage.storageBucket,
-          'handle': handle,
-        },
-      );
-
-  @override
-  Future<dynamic> platformStart() {
-    String key;
-    dynamic value;
-    String method;
-    switch (dataType) {
-      case UploadDataType.FILE:
-        key = 'filename';
-        value = _data.absolute.path; //File.absolute.path
-        method = 'StorageReference#putFile';
-        break;
-      case UploadDataType.DATA:
-        key = 'data';
-        method = 'StorageReference#putData';
-        value = _data; //Uint8List
-        break;
-      default:
-        break;
-    }
-    return _channel.invokeMethod<dynamic>(
-      method,
-      <String, dynamic>{
-        'app': firebaseStorage.app?.name,
-        'bucket': firebaseStorage.storageBucket,
-        key: value,
-        'path': ref.path,
-        'metadata': metadata == null ? null : _buildMetadataUploadMap(metadata),
-      },
-    );
-  }
+  void cancel() => super.cancel();
 }

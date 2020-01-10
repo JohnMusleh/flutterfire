@@ -19,11 +19,6 @@ class MethodChannelFirebaseStorage extends FirebaseStoragePlatform {
   );
 
   @override
-  PlatformStorageRef ref() {
-    return PlatformStorageRef(const <String>[], this);
-  }
-
-  @override
   Future<int> getMaxDownloadRetryTimeMillis() async {
     return await channel.invokeMethod<int>(
         "FirebaseStorage#getMaxDownloadRetryTime", <String, dynamic>{
@@ -91,5 +86,10 @@ class MethodChannelFirebaseStorage extends FirebaseStoragePlatform {
     } else {
       return null;
     }
+  }
+
+  @override
+  PlatformStorageRef ref() {
+    return PlatformStorageRef([], this);
   }
 }

@@ -6,25 +6,55 @@ part of firebase_storage_platform_interface;
 
 enum UploadDataType { DATA, FILE, STRING }
 
-abstract class PlatformUploadTask {
-  PlatformUploadTask(this._data, this._firebaseStorage, this._ref,
-      this._metadata, this._dataType);
+class PlatformUploadTask {
+  PlatformUploadTask(
+      this.data, this.firebaseStorage, this.ref, this.metadata, this.dataType);
 
-  final FirebaseStoragePlatform _firebaseStorage;
-  final PlatformStorageRef _ref;
-  final StorageMetadata _metadata;
-  final UploadDataType _dataType;
-  final dynamic _data;
+  final FirebaseStoragePlatform firebaseStorage;
+  final PlatformStorageRef ref;
+  final StorageMetadata metadata;
+  final UploadDataType dataType;
+  final dynamic data;
 
-  Future<dynamic> platformStart();
+  @visibleForTesting
+  static const MethodChannel channel = MethodChannel(
+    'plugins.flutter.io/firebase_storage',
+  );
+
+  Future<dynamic> _platformStart() {
+    String key;
+    dynamic value;
+    String method;
+    switch (dataType) {
+      case UploadDataType.FILE:
+        key = 'filename';
+        value = data.absolute.path; //File.absolute.path
+        method = 'StorageReference#putFile';
+        break;
+      case UploadDataType.DATA:
+        key = 'data';
+        method = 'StorageReference#putData';
+        value = data; //Uint8List
+        break;
+      default:
+        break;
+    }
+    print('invoking  channel $channel with args $key:$value');
+    return channel.invokeMethod<dynamic>(
+      method,
+      <String, dynamic>{
+        'app': firebaseStorage.app?.name,
+        'bucket': firebaseStorage.storageBucket,
+        key: value,
+        'path': ref.path,
+        'metadata': metadata == null ? null : _buildMetadataUploadMap(metadata),
+      },
+    );
+  }
 
   int _handle;
 
   int get handle => _handle;
-  FirebaseStoragePlatform get firebaseStorage => _firebaseStorage;
-  PlatformStorageRef get ref => _ref;
-  StorageMetadata get metadata => _metadata;
-  UploadDataType get dataType => _dataType;
 
   bool isCanceled = false;
   bool isComplete = false;
@@ -44,14 +74,14 @@ abstract class PlatformUploadTask {
   Stream<StorageTaskEvent> get events => _controller.stream;
 
   Future<StorageTaskSnapshot> start() async {
-    _handle = await platformStart();
-    final StorageTaskEvent event = await _firebaseStorage.methodStream
+    _handle = await _platformStart();
+    final StorageTaskEvent event = await firebaseStorage.methodStream
         .where((MethodCall m) {
       return m.method == 'StorageTaskEvent' && m.arguments['handle'] == _handle;
     }).map<StorageTaskEvent>((MethodCall m) {
       final Map<dynamic, dynamic> args = m.arguments;
       final StorageTaskEvent e =
-          StorageTaskEvent._(args['type'], _ref, args['snapshot']);
+          StorageTaskEvent._(args['type'], ref, args['snapshot']);
       _changeState(e);
       _lastSnapshot = e.snapshot;
       _controller.add(e);
@@ -99,14 +129,32 @@ abstract class PlatformUploadTask {
     isSuccessful = false;
   }
 
-  /// Pause the upload
-  void pause() => throw UnimplementedError('pause() is not implemented');
+  void pause() => channel.invokeMethod<void>(
+        'UploadTask#pause',
+        <String, dynamic>{
+          'app': firebaseStorage.app?.name,
+          'bucket': firebaseStorage.storageBucket,
+          'handle': handle,
+        },
+      );
 
-  /// Resume the upload
-  void resume() => throw UnimplementedError('resume() is not implemented');
+  void resume() => channel.invokeMethod<void>(
+        'UploadTask#resume',
+        <String, dynamic>{
+          'app': firebaseStorage.app?.name,
+          'bucket': firebaseStorage.storageBucket,
+          'handle': handle,
+        },
+      );
 
-  /// Cancel the upload
-  void cancel() => throw UnimplementedError('cancel() is not implemented');
+  void cancel() => channel.invokeMethod<void>(
+        'UploadTask#cancel',
+        <String, dynamic>{
+          'app': firebaseStorage.app?.name,
+          'bucket': firebaseStorage.storageBucket,
+          'handle': handle,
+        },
+      );
 }
 //to be implemented in firebase_storage.dart
 // class _StorageFileUploadTask extends PlatformUploadTask {
@@ -124,12 +172,12 @@ abstract class PlatformUploadTask {
 //     return MethodChannelFirebaseStorage.channel.invokeMethod<dynamic>(
 //       'StorageReference#putFile',
 //       <String, dynamic>{
-//         'app': _firebaseStorage.app?.name,
-//         'bucket': _firebaseStorage.storageBucket,
+//         'app': firebaseStorage.app?.name,
+//         'bucket': firebaseStorage.storageBucket,
 //         'filename': _file.absolute.path,
-//         'path': _ref.path,
+//         'path': ref.path,
 //         'metadata':
-//             _metadata == null ? null : _buildMetadataUploadMap(_metadata),
+//             metadata == null ? null : _buildMetadataUploadMap(metadata),
 //       },
 //     );
 //   }
@@ -150,12 +198,12 @@ abstract class PlatformUploadTask {
 //     return MethodChannelFirebaseStorage.channel.invokeMethod<dynamic>(
 //       'StorageReference#putData',
 //       <String, dynamic>{
-//         'app': _firebaseStorage.app?.name,
-//         'bucket': _firebaseStorage.storageBucket,
+//         'app': firebaseStorage.app?.name,
+//         'bucket': firebaseStorage.storageBucket,
 //         'data': _bytes,
-//         'path': _ref.path,
+//         'path': ref.path,
 //         'metadata':
-//             _metadata == null ? null : _buildMetadataUploadMap(_metadata),
+//             metadata == null ? null : _buildMetadataUploadMap(metadata),
 //       },
 //     );
 //   }

@@ -8,12 +8,14 @@ class PlatformStorageRef {
   final List<String> _pathComponents;
   final FirebaseStoragePlatform _firebaseStorage;
 
-  // PlatformStorageRef _parent;
-  // PlatformStorageRef _root;
-
   PlatformStorageRef(
     this._pathComponents,
     this._firebaseStorage,
+  );
+
+  @visibleForTesting
+  static const MethodChannel channel = MethodChannel(
+    'plugins.flutter.io/firebase_storage',
   );
 
   PlatformStorageRef get parent {
@@ -32,9 +34,10 @@ class PlatformStorageRef {
     return PlatformStorageRef(parentPath, _firebaseStorage);
   }
 
-  PlatformStorageRef get root {
-    return PlatformStorageRef(<String>[], _firebaseStorage);
-  }
+  PlatformStorageRef get root =>
+      PlatformStorageRef(<String>[], _firebaseStorage);
+
+  FirebaseStoragePlatform get storage => _firebaseStorage;
 
   FirebaseStoragePlatform get firebaseStorage => _firebaseStorage;
 
@@ -42,12 +45,94 @@ class PlatformStorageRef {
 
   String get path => _pathComponents?.join('/');
 
-  FirebaseStoragePlatform get storage => _firebaseStorage;
-
   PlatformStorageRef child(String path) {
     final List<String> childPath = List<String>.from(_pathComponents)
       ..addAll(path.split("/"));
     return PlatformStorageRef(childPath, _firebaseStorage);
+  }
+
+  Future<String> getBucket() async {
+    return await channel
+        .invokeMethod<String>("StorageReference#getBucket", <String, String>{
+      'app': firebaseStorage.app?.name,
+      'bucket': firebaseStorage.storageBucket,
+      'path': path,
+    });
+  }
+
+  Future<String> getPath() async {
+    final String _path = await channel
+        .invokeMethod<String>("StorageReference#getPath", <String, String>{
+      'app': firebaseStorage.app?.name,
+      'bucket': firebaseStorage.storageBucket,
+      'path': path,
+    });
+
+    if (_path.startsWith('/')) {
+      return _path.substring(1);
+    } else {
+      return _path;
+    }
+  }
+
+  Future<String> getName() async {
+    return await channel
+        .invokeMethod<String>("StorageReference#getName", <String, String>{
+      'app': firebaseStorage.app?.name,
+      'bucket': firebaseStorage.storageBucket,
+      'path': path,
+    });
+  }
+
+  Future<void> delete() {
+    return channel
+        .invokeMethod<void>("StorageReference#delete", <String, String>{
+      'app': firebaseStorage.app?.name,
+      'bucket': firebaseStorage.storageBucket,
+      'path': path
+    });
+  }
+
+  Future<dynamic> getDownloadURL() async {
+    return await channel.invokeMethod<dynamic>(
+        "StorageReference#getDownloadUrl", <String, String>{
+      'app': firebaseStorage.app?.name,
+      'bucket': firebaseStorage.storageBucket,
+      'path': path,
+    });
+  }
+
+  Future<StorageMetadata> getMetadata() async {
+    return StorageMetadata.fromMap(await channel
+        .invokeMapMethod<String, dynamic>(
+            "StorageReference#getMetadata", <String, String>{
+      'app': firebaseStorage.app?.name,
+      'bucket': firebaseStorage.storageBucket,
+      'path': path,
+    }));
+  }
+
+  Future<Uint8List> getData(int maxSize) async {
+    return await channel.invokeMethod<Uint8List>(
+      "StorageReference#getData",
+      <String, dynamic>{
+        'app': firebaseStorage.app?.name,
+        'bucket': firebaseStorage.storageBucket,
+        'maxSize': maxSize,
+        'path': path,
+      },
+    );
+  }
+
+  Future<StorageMetadata> updateMetadata(StorageMetadata metadata) async {
+    return StorageMetadata.fromMap(await channel
+        .invokeMapMethod<String, dynamic>(
+            "StorageReference#updateMetadata", <String, dynamic>{
+      'app': firebaseStorage.app?.name,
+      'bucket': firebaseStorage.storageBucket,
+      'path': path,
+      'metadata': metadata == null ? null : _buildMetadataUploadMap(metadata),
+    }));
   }
 
   @deprecated
@@ -55,43 +140,36 @@ class PlatformStorageRef {
     return putFile(file, metadata);
   }
 
-  Future<String> getBucket() {
-    throw UnimplementedError('getBucket() is not implemented');
-  }
-
-  Future<String> getPath() {
-    throw UnimplementedError('getPath() is not implemented');
-  }
-
-  Future<String> getName() {
-    throw UnimplementedError('getName() is not implemented');
-  }
-
-  Future<void> delete() {
-    throw UnimplementedError('delete() is not implemented');
-  }
-
-  Future<dynamic> getDownloadURL() async {
-    throw UnimplementedError('getDownloadURL() is not implemented');
-  }
-
-  Future<StorageMetadata> getMetadata() async {
-    throw UnimplementedError('getMetadata() is not implemented');
-  }
-
   PlatformUploadTask putFile(File file, [StorageMetadata metadata]) {
-    throw UnimplementedError('putFile() is not implemented');
+    assert(file.existsSync());
+    final PlatformUploadTask task = PlatformUploadTask(
+        file, firebaseStorage, this, metadata, UploadDataType.FILE);
+    task.start();
+    return task;
   }
 
   PlatformUploadTask putData(Uint8List data, [StorageMetadata metadata]) {
-    throw UnimplementedError('putData() is not implemented');
+    final PlatformUploadTask task = PlatformUploadTask(
+        data, firebaseStorage, this, metadata, UploadDataType.DATA);
+    task.start();
+    return task;
   }
 
-  Future<StorageMetadata> updateMetadata(StorageMetadata metadata) async {
-    throw UnimplementedError('updateMetadata() is not implemented');
+  PlatformDownloadTask writeToFile(File file) {
+    final PlatformDownloadTask task =
+        PlatformDownloadTask(firebaseStorage, path, file);
+    task._start();
+    return task;
   }
+}
 
-  dynamic writeToFile(File file) {
-    throw UnimplementedError('updateMetadata() is not implemented');
-  }
+Map<String, dynamic> _buildMetadataUploadMap(StorageMetadata metadata) {
+  return <String, dynamic>{
+    'cacheControl': metadata.cacheControl,
+    'contentDisposition': metadata.contentDisposition,
+    'contentLanguage': metadata.contentLanguage,
+    'contentType': metadata.contentType,
+    'contentEncoding': metadata.contentEncoding,
+    'customMetadata': metadata.customMetadata,
+  };
 }
