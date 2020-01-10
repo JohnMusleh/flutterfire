@@ -1,4 +1,4 @@
-part of firebase_storage_platform_interface;
+part of firebase_storage;
 
 class StorageFileDownloadTask {
   StorageFileDownloadTask._(this._firebaseStorage, this._path, this._file);
@@ -7,10 +7,14 @@ class StorageFileDownloadTask {
   final String _path;
   final File _file;
 
+  static const MethodChannel channel = MethodChannel(
+    'plugins.flutter.io/firebase_storage',
+  );
+
   Future<void> _start() async {
     try {
       final int totalByteCount =
-          await MethodChannelFirebaseStorage.channel.invokeMethod<int>(
+          await channel.invokeMethod<int>(
         "StorageReference#writeToFile",
         <String, dynamic>{
           'app': _firebaseStorage.app?.name,

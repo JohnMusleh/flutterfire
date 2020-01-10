@@ -6,24 +6,10 @@
 part of firebase_storage_platform_interface;
 
 class MethodChannelFirebaseStorage extends FirebaseStoragePlatform {
-  /// The [FirebaseApp] instance to which this [FirebaseStorage] belongs.
-  ///
-  /// If null, the default [FirebaseApp] is used.
-  final FirebaseApp app;
-
-  /// The Google Cloud Storage bucket to which this [FirebaseStorage] belongs.
-  ///
-  /// If null, the storage bucket of the specified [FirebaseApp] is used.
-  final String storageBucket;
-
-  /// Used to dispatch method calls
-  static final StreamController<MethodCall> _methodStreamController =
-      StreamController<MethodCall>.broadcast(); // ignore: close_sinks
-  Stream<MethodCall> get _methodStream => _methodStreamController.stream;
-
-  MethodChannelFirebaseStorage({this.app, this.storageBucket}) {
+  MethodChannelFirebaseStorage({FirebaseApp app, String storageBucket})
+      : super(app, storageBucket) {
     channel.setMethodCallHandler((MethodCall call) async {
-      _methodStreamController.add(call);
+      FirebaseStoragePlatform._methodStreamController.add(call);
     });
   }
 
@@ -33,8 +19,8 @@ class MethodChannelFirebaseStorage extends FirebaseStoragePlatform {
   );
 
   @override
-  StorageReference ref() {
-    return StorageReference._(const <String>[], this);
+  PlatformStorageRef ref() {
+    return PlatformStorageRef(const <String>[], this);
   }
 
   @override
@@ -93,7 +79,7 @@ class MethodChannelFirebaseStorage extends FirebaseStoragePlatform {
 
   /// Creates a [StorageReference] given a gs:// or // URL pointing to a Firebase
   /// Storage location.
-  Future<StorageReference> getReferenceFromUrl(String fullUrl) async {
+  Future<PlatformStorageRef> getReferenceFromUrl(String fullUrl) async {
     final String path = await channel.invokeMethod<String>(
         "FirebaseStorage#getReferenceFromUrl", <String, dynamic>{
       'app': app?.name,

@@ -5,19 +5,19 @@
 library firebase_storage_platform_interface;
 
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flutter/services.dart';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:meta/meta.dart' show visibleForTesting;
 
 part 'src/method_channel_firebase_storage.dart';
-part 'src/types/storage_reference.dart';
+// part 'src/types/platform_download_task.dart';
+part 'src/types/platform_storage_ref.dart';
 part 'src/types/storage_metadata.dart';
-part 'src/types/upload_task.dart';
-part 'src/types/download_task.dart';
+part 'src/types/platform_upload_task.dart';
 part 'src/types/download_snapshot.dart';
 part 'src/types/event.dart';
 part 'src/types/error.dart';
@@ -31,6 +31,21 @@ part 'src/types/error.dart';
 /// `implements` this interface will be broken by newly added
 /// [FirebaseStoragePlatform] methods.
 abstract class FirebaseStoragePlatform {
+  /// The [FirebaseApp] instance to which this [FirebaseStorage] belongs.
+  ///
+  /// If null, the default [FirebaseApp] is used.
+  final FirebaseApp _app;
+
+  /// The Google Cloud Storage bucket to which this [FirebaseStorage] belongs.
+  ///
+  /// If null, the storage bucket of the specified [FirebaseApp] is used.
+  final String _storageBucket;
+
+  FirebaseApp get app => _app;
+  String get storageBucket => _storageBucket;
+
+  FirebaseStoragePlatform(this._app, this._storageBucket);
+
   /// Only mock implementations should set this to `true`.
   ///
   /// Mockito mocks implement this class with `implements` which is forbidden
@@ -72,7 +87,12 @@ abstract class FirebaseStoragePlatform {
   /// if the provided instance is a class implemented with `implements`.
   void _verifyProvidesDefaultImplementations() {}
 
-  StorageReference ref() {
+  /// Used to dispatch method calls
+  static final StreamController<MethodCall> _methodStreamController =
+      StreamController<MethodCall>.broadcast(); // ignore: close_sinks
+  Stream<MethodCall> get methodStream => _methodStreamController.stream;
+
+  PlatformStorageRef ref() {
     throw UnimplementedError('ref() is not implemented');
   }
 
@@ -108,7 +128,7 @@ abstract class FirebaseStoragePlatform {
 
   /// Creates a [StorageReference] given a gs:// or // URL pointing to a Firebase
   /// Storage location.
-  Future<StorageReference> getReferenceFromUrl(String fullUrl) async {
+  Future<PlatformStorageRef> getReferenceFromUrl(String fullUrl) async {
     throw UnimplementedError('getReferenceFromUrl() is not implemented');
   }
 }

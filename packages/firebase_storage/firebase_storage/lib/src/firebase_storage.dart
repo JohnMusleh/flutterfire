@@ -39,7 +39,8 @@ class FirebaseStorage {
   /// Creates a new [StorageReference] initialized at the root
   /// Firebase Storage location.
   StorageReference ref() {
-    return FirebaseStoragePlatform.instance.ref();
+    return StorageReference._fromPlatform(
+        FirebaseStoragePlatform.instance?.ref());
   }
 
   // @visibleForTesting
@@ -71,8 +72,6 @@ class FirebaseStorage {
     await FirebaseStoragePlatform.instance.setMaxOperationRetryTimeMillis(time);
   }
 
-  /// Creates a [StorageReference] given a gs:// or // URL pointing to a Firebase
-  /// Storage location.
   Future<StorageReference> getReferenceFromUrl(String fullUrl) async {
     return await FirebaseStoragePlatform.instance.getReferenceFromUrl(fullUrl);
   }
